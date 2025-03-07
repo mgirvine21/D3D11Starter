@@ -6,7 +6,8 @@ cbuffer ExternalData : register(b0)
 }
 
 //texture and sampler resouces
-Texture2D SurfaceTexture : register(t0); // "t" registers for textures
+Texture2D SurfaceTextureStone : register(t0); // "t" registers for textures 1
+Texture2D SurfaceTextureCobble : register(t1); // "t" registers for textures 2
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -21,9 +22,9 @@ struct VertexToPixel
 	//  |   Name          Semantic
 	//  |    |                |
 	//  v    v                v
-	float4 screenPosition	: SV_POSITION;
-    float2 uv				: TEXCOORD;
-    float3 normal			: NORMAL;
+    float4 screenPosition : SV_POSITION;
+    float2 uv : TEXCOORD;
+    float3 normal : NORMAL;
 };
 
 // --------------------------------------------------------
@@ -44,7 +45,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	
 	//sampling
     input.uv = input.uv * uvScale + uvOffset;
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    float3 surfaceColor = (SurfaceTextureStone.Sample(BasicSampler, input.uv).rgb) * (SurfaceTextureCobble.Sample(BasicSampler, input.uv).rgb);
 	//colorTinting
     surfaceColor *= colorTint;
 	

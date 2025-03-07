@@ -12,6 +12,7 @@
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
+#include "WICTextureLoader.h"
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -86,12 +87,15 @@ void Game::CreateGeometry()
 		Graphics::Device, Graphics::Context, FixPath(L"DebugNormalsPS.cso").c_str());
 	std::shared_ptr<SimplePixelShader> customShader = std::make_shared<SimplePixelShader>(
 		Graphics::Device, Graphics::Context, FixPath(L"CustomPS.cso").c_str());
+	std::shared_ptr<SimplePixelShader> multiplyShader = std::make_shared<SimplePixelShader>(
+		Graphics::Device, Graphics::Context, FixPath(L"MultiplyPS.cso").c_str());
 
 	//loading models
 	std::shared_ptr<Mesh> sphereMesh0 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
 	std::shared_ptr<Mesh> sphereMesh1 = std::make_shared<Mesh>("sphere1", FixPath(L"../../Assets/Models/sphere.obj").c_str());
 	std::shared_ptr<Mesh> sphereMesh2 = std::make_shared<Mesh>("sphere2", FixPath(L"../../Assets/Models/sphere.obj").c_str());
 	std::shared_ptr<Mesh> sphereMesh3 = std::make_shared<Mesh>("sphere3", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh4 = std::make_shared<Mesh>("sphere4", FixPath(L"../../Assets/Models/sphere.obj").c_str());
 	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
 	std::shared_ptr<Mesh> helixMesh = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
 	std::shared_ptr<Mesh> torusMesh = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
@@ -100,21 +104,61 @@ void Game::CreateGeometry()
 	std::shared_ptr<Mesh> quad_double_sidedMesh = std::make_shared<Mesh>("quad_double_sided", FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str());
 
 	//updating mesh vector
-	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, cubeMesh, helixMesh, torusMesh, cylinderMesh, quadMesh, quad_double_sidedMesh });
+	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, sphereMesh4, cubeMesh, helixMesh, torusMesh, cylinderMesh, quadMesh, quad_double_sidedMesh });
+
+	//loading textures
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler;
+
+	//actually load a texture
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleSRV;
+
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock.png").c_str(), 0, rockSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood.png").c_str(), 0, woodSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobble.png").c_str(), 0, cobbleSRV.GetAddressOf());
+
+	//create a sampler state
+	D3D11_SAMPLER_DESC sampDesc = {};
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	sampDesc.MaxAnisotropy = 16;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	Graphics::Device->CreateSamplerState(&sampDesc, sampler.GetAddressOf());
 
 	//creating materials
-	std::shared_ptr<Material> mat1 = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(.75, 0, 0.95), "Purple");
-	std::shared_ptr<Material> matUV = std::make_shared<Material>(uvShader, vertexShader, XMFLOAT3(1, 1, 1), "UV Preview");
-	std::shared_ptr<Material> matNorm = std::make_shared<Material>(normalShader, vertexShader, XMFLOAT3(1, 1, 1), "Normal Preview");
-	std::shared_ptr<Material> matCustom = std::make_shared<Material>(customShader, vertexShader, XMFLOAT3(1, 1, 1), "Custom Colorshift");
+	std::shared_ptr<Material> mat1 = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(.75f, 0, 0.95f), "Rocky Purple");
+	mat1->AddSampler("BasicSampler", sampler);
+	mat1->AddTextureSRV("SurfaceTexture", rockSRV);
+
+	std::shared_ptr<Material> matUV = std::make_shared<Material>(uvShader, vertexShader, XMFLOAT3(1, 1, 1), "UV Preview", XMFLOAT2(1, 1));
+	std::shared_ptr<Material> matNorm = std::make_shared<Material>(normalShader, vertexShader, XMFLOAT3(1, 1, 1), "Normal Preview", XMFLOAT2(1, 1));
+	std::shared_ptr<Material> matCustom = std::make_shared<Material>(customShader, vertexShader, XMFLOAT3(1, 1, 1), "Custom Colorshift", XMFLOAT2(1, 1));
+
+	//adding texture to materials
+		std::shared_ptr<Material> matRock = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1, 1, 1), "Rock", XMFLOAT2(1, 1));
+	matRock->AddSampler("BasicSampler", sampler);
+	matRock->AddTextureSRV("SurfaceTexture", rockSRV);
+
+	std::shared_ptr<Material> matWood = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1,1,1), "Wood", XMFLOAT2(2, 2));
+	matWood->AddSampler("BasicSampler", sampler);
+	matWood->AddTextureSRV("SurfaceTexture", woodSRV);
+	
+	//mat with two textures using the multiply pixle shader
+	std::shared_ptr<Material> matCobbleStone = std::make_shared<Material>(multiplyShader, vertexShader, XMFLOAT3(1, 1, 1), "Cobble", XMFLOAT2(1, 1));
+	matCobbleStone->AddSampler("BasicSampler", sampler);
+	matCobbleStone->AddTextureSRV("SurfaceTextureStone", rockSRV);
+	matCobbleStone->AddTextureSRV("SurfaceTextureCobble", cobbleSRV);
 
 	//updating mats vector
-	mats.insert(mats.end(), { mat1, matUV, matNorm, matCustom });
+	mats.insert(mats.end(), { mat1, matUV, matNorm, matCustom, matRock, matWood, matCobbleStone });
 
 	//updating entities vector
 	entities.push_back(std::make_shared<GameEntity>(sphereMesh0, matCustom));
-	entities.push_back(std::make_shared<GameEntity>(cubeMesh, mat1));
-	entities.push_back(std::make_shared<GameEntity>(helixMesh, mat1));
+	entities.push_back(std::make_shared<GameEntity>(cubeMesh, matWood));
+	entities.push_back(std::make_shared<GameEntity>(helixMesh, matRock));
 	entities.push_back(std::make_shared<GameEntity>(torusMesh, matUV));
 	entities.push_back(std::make_shared<GameEntity>(cylinderMesh, matUV));
 	entities.push_back(std::make_shared<GameEntity>(quadMesh, matNorm));
@@ -122,6 +166,7 @@ void Game::CreateGeometry()
 	entities.push_back(std::make_shared<GameEntity>(sphereMesh1, mat1));
 	entities.push_back(std::make_shared<GameEntity>(sphereMesh2, matUV));
 	entities.push_back(std::make_shared<GameEntity>(sphereMesh3, matNorm));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh4, matCobbleStone));
 
 	//place entities in scene
 	entities[0]->GetTransform()->MoveAbsolute(-3, 0, 5);
@@ -134,6 +179,7 @@ void Game::CreateGeometry()
 	entities[7]->GetTransform()->MoveAbsolute(0, -3, 5);
 	entities[8]->GetTransform()->MoveAbsolute(6, -3, 5);
 	entities[9]->GetTransform()->MoveAbsolute(12, -3, 5);
+	entities[10]->GetTransform()->MoveAbsolute(3, -3, 5);
 }
 
 
@@ -287,6 +333,9 @@ void Game::BuildUI()
 				XMFLOAT3 pos = trans->GetPosition();
 				XMFLOAT3 rot = trans->GetPitchYawRoll();
 				XMFLOAT3 sca = trans->GetScale();
+				XMFLOAT3 colorTint = entities[i]->GetMat()->GetColorTint();
+				XMFLOAT2 uvScale = entities[i]->GetMat()->GetUVScale();
+				XMFLOAT2 uvOffset = entities[i]->GetMat()->GetUVOffset();
 				ImGui::PushID(i);
 				if (ImGui::TreeNode("Entity Node", "Entity %d", i))
 				{	
@@ -296,6 +345,29 @@ void Game::BuildUI()
 					if (ImGui::DragFloat3("Position", &pos.x, 0.01f)) trans->SetPosition(pos);
 					if (ImGui::DragFloat3("Rotation (Radians)", &rot.x, 0.01f)) trans->SetRotation(rot);
 					if (ImGui::DragFloat3("Scale", &sca.x, 0.01f)) trans->SetScale(sca);
+
+					//material color tint adjsut
+					if (ImGui::ColorEdit4("Color Tint", &colorTint.x))
+						entities[i]->GetMat()->SetColorTint(colorTint);
+
+					//UV Scale and Offset Adjust
+					if (ImGui::DragFloat2("UV Scale", &uvScale.x, 0.01f))
+						entities[i]->GetMat()->SetUVScale(uvScale);
+					if (ImGui::DragFloat2("UV Offset", &uvOffset.x, 0.01f))
+						entities[i]->GetMat()->SetUVOffset(uvOffset);
+
+					//for each of the entities textures [there is amax 2 right now]
+					for (auto& it : entities[i]->GetMat()->GetTextureSRVMap())
+					{
+						//display texture name
+						ImGui::Text(it.first.c_str());
+
+						//if there is texutres
+						if (it.second)
+						{
+							ImGui::Image((ImTextureID)it.second.Get(), ImVec2(256, 256));
+						}
+					}
 					ImGui::TreePop();
 				}
 				ImGui::PopID();
