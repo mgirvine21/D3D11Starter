@@ -2,6 +2,7 @@
 cbuffer ExternalData : register(b0)
 {
     float3 colorTint;
+    float time;
 }
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -16,10 +17,20 @@ struct VertexToPixel
 	//  |   Name          Semantic
 	//  |    |                |
 	//  v    v                v
-	float4 screenPosition	: SV_POSITION;
-    float2 uv				: TEXCOORD;
-    float3 normal			: NORMAL;
+    float4 screenPosition : SV_POSITION;
+    float2 uv : TEXCOORD;
+    float3 normal : NORMAL;
 };
+
+//function to make a smooth color change using sin
+float3 GetColorShift(float t)
+{
+    return float3(
+        sin(t * 0.5) * 0.5 + 0.5, // Red channel oscillation
+        sin(t * 0.7 + 2.0) * 0.5 + 0.5, // Green channel oscillation
+        sin(t * 0.9 + 4.0) * 0.5 + 0.5 // Blue channel oscillation
+    );
+}
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -32,9 +43,7 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-    return float4(colorTint, 1);
+	//oscillating color using sin waves and time
+    return float4(GetColorShift(time) * colorTint, 1);
 }
+

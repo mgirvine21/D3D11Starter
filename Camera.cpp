@@ -20,6 +20,28 @@ Camera::Camera(float aspectRatio, XMFLOAT3 pos, float fov, bool isPersp, float m
 
 void Camera::Update(float dt)
 {
+	//mouse movement input
+	if (Input::MouseLeftDown())
+	{
+		//mouse x and y pos
+		int deltaX = Input::GetMouseXDelta();
+		int deltaY = Input::GetMouseYDelta();
+
+		//how far mouse moved since last frame
+		float yaw = deltaX * mouseLookSpeed;
+		float pitch = deltaY * mouseLookSpeed;
+
+		//rotate transform based on mouse movement
+		XMFLOAT3 currentRot = transform->GetPitchYawRoll();
+		currentRot.y += yaw;
+		currentRot.x += pitch;
+
+		//clamp pitch with offset
+		currentRot.x = max(-XM_PIDIV2 + 0.01f, min(XM_PIDIV2 - 0.01f, currentRot.x));
+
+		transform->SetRotation(currentRot);
+	}
+
 	//called every frame
 	UpdateViewMatrix();
 
@@ -55,28 +77,6 @@ void Camera::UpdateViewMatrix()
 	//create and store view matrix
 	XMMATRIX view = XMMatrixLookToLH(XMLoadFloat3(&pos), XMLoadFloat3(&direction), XMLoadFloat3(&up));
 	XMStoreFloat4x4(&viewMatrix, view);
-
-	//mouse movement input
-	if (Input::MouseLeftDown())
-	{
-		//mouse x and y pos
-		int deltaX = Input::GetMouseXDelta();
-		int deltaY = Input::GetMouseYDelta();
-
-		//how far mouse moved since last frame
-		float yaw = deltaX * mouseLookSpeed;
-		float pitch = deltaY * mouseLookSpeed;
-
-		//rotate transform based on mouse movement
-		XMFLOAT3 currentRot = transform->GetPitchYawRoll();
-		currentRot.y += yaw;                             
-		currentRot.x += pitch;                           
-
-		//clamp pitch with offset
-		currentRot.x = max(-XM_PIDIV2 + 0.01f, min(XM_PIDIV2 - 0.01f, currentRot.x));
-
-		transform->SetRotation(currentRot);
-	}
 }
 
 void Camera::UpdateProjectionMatrix(float aspectRatio)

@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 #include <DirectXMath.h>
+#include "Material.h"
+#include "SimpleShader.h"
 
 class Game
 {
@@ -27,7 +29,6 @@ public:
 private:
 
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
-	void LoadShaders();
 	void CreateGeometry();
 	void ImGuiFrame(float deltaTime);
 	void BuildUI();
@@ -38,16 +39,16 @@ private:
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
 	// Buffers to hold actual geometry data
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
+	/*Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;*/
 
-	// Shaders and shader-related constructs
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	//// Shaders and shader-related constructs
+	//Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
+	//Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
+	//Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
 
-	//constant buffer
-	Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer;
+	////constant buffer
+	//Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer;
 
 	//variables for game class and UI
 	int sliderNumber;
@@ -62,6 +63,7 @@ private:
 	//meshes / entities / cameras stored in vectors
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<std::shared_ptr<GameEntity>> entities;
+	std::vector < std::shared_ptr<Material>> mats;
 	std::vector<std::shared_ptr<Camera>> cameras;
 	int activeCameraIndex;
 

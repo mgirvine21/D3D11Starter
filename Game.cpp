@@ -25,7 +25,6 @@ void Game::Initialize()
 	// Helper methods for loading shaders, creating some basic
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
-	LoadShaders();
 	CreateGeometry();
 
 	// Set initial graphics API state
@@ -37,31 +36,6 @@ void Game::Initialize()
 		// geometric primitives (points, lines or triangles) we want to draw.  
 		// Essentially: "What kind of shape should the GPU draw with our vertices?"
 		Graphics::Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		// Ensure the pipeline knows how to interpret all the numbers stored in
-		// the vertex buffer. For this course, all of your vertices will probably
-		// have the same layout, so we can just set this once at startup.
-		Graphics::Context->IASetInputLayout(inputLayout.Get());
-
-		// Set the active vertex and pixel shaders
-		//  - Once you start applying different shaders to different objects,
-		//    these calls will need to happen multiple times per frame
-		Graphics::Context->VSSetShader(vertexShader.Get(), 0, 0);
-		Graphics::Context->PSSetShader(pixelShader.Get(), 0, 0);
-
-		//CONSTANT BUFFER
-		//creation
-		D3D11_BUFFER_DESC cbDesc = {};
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.ByteWidth = (sizeof(ConstantBufferData) + 15) / 16 * 16; //multiple of 16
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.MiscFlags = 0;
-		cbDesc.StructureByteStride = 0;
-		Graphics::Device->CreateBuffer(&cbDesc, 0, constantBuffer.GetAddressOf());
-
-		//binding the constant buffer
-		Graphics::Context->VSSetConstantBuffers(0, 1, constantBuffer.GetAddressOf());
 	}
 
 	// Initialize ImGui itself & platform/renderer backends
@@ -73,7 +47,7 @@ void Game::Initialize()
 
 	//create camera
 	float aspectRatio = Window::AspectRatio();
-	XMFLOAT3 persStartPos = { 0.0f, 0.0f, -5.0f };
+	XMFLOAT3 persStartPos = { 6.0f, 1.0f, -12.0f };
 	XMFLOAT3 orthoStartPos = { 0.0f, 0.0f, -2.0f };
 	cameras.push_back(std::make_shared<Camera>(aspectRatio, persStartPos, XM_PIDIV4, true)); // perspective cam 1
 	cameras.push_back(std::make_shared<Camera>(aspectRatio, orthoStartPos, XM_PIDIV4 + 10, true)); // perspective cam 2
@@ -97,139 +71,69 @@ Game::~Game()
 
 
 // --------------------------------------------------------
-// Loads shaders from compiled shader object (.cso) files
-// and also created the Input Layout that describes our 
-// vertex data to the rendering pipeline. 
-// - Input Layout creation is done here because it must 
-//    be verified against vertex shader byte code
-// - We'll have that byte code already loaded below
-// --------------------------------------------------------
-void Game::LoadShaders()
-{
-	// BLOBs (or Binary Large OBjects) for reading raw data from external files
-	// - This is a simplified way of handling big chunks of external data
-	// - Literally just a big array of bytes read from a file
-	ID3DBlob* pixelShaderBlob;
-	ID3DBlob* vertexShaderBlob;
-
-	// Loading shaders
-	//  - Visual Studio will compile our shaders at build time
-	//  - They are saved as .cso (Compiled Shader Object) files
-	//  - We need to load them when the application starts
-	{
-		// Read our compiled shader code files into blobs
-		// - Essentially just "open the file and plop its contents here"
-		// - Uses the custom FixPath() helper from Helpers.h to ensure relative paths
-		// - Note the "L" before the string - this tells the compiler the string uses wide characters
-		D3DReadFileToBlob(FixPath(L"PixelShader.cso").c_str(), &pixelShaderBlob);
-		D3DReadFileToBlob(FixPath(L"VertexShader.cso").c_str(), &vertexShaderBlob);
-
-		// Create the actual Direct3D shaders on the GPU
-		Graphics::Device->CreatePixelShader(
-			pixelShaderBlob->GetBufferPointer(),	// Pointer to blob's contents
-			pixelShaderBlob->GetBufferSize(),		// How big is that data?
-			0,										// No classes in this shader
-			pixelShader.GetAddressOf());			// Address of the ID3D11PixelShader pointer
-
-		Graphics::Device->CreateVertexShader(
-			vertexShaderBlob->GetBufferPointer(),	// Get a pointer to the blob's contents
-			vertexShaderBlob->GetBufferSize(),		// How big is that data?
-			0,										// No classes in this shader
-			vertexShader.GetAddressOf());			// The address of the ID3D11VertexShader pointer
-	}
-
-	// Create an input layout 
-	//  - This describes the layout of data sent to a vertex shader
-	//  - In other words, it describes how to interpret data (numbers) in a vertex buffer
-	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-	//  - Luckily, we already have that loaded (the vertex shader blob above)
-	{
-		D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
-
-		// Set up the first element - a position, which is 3 float values
-		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
-		inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
-		inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
-
-		// Set up the second element - a color, which is 4 more float values
-		inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
-		inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
-		inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
-
-		// Create the input layout, verifying our description against actual shader code
-		Graphics::Device->CreateInputLayout(
-			inputElements,							// An array of descriptions
-			2,										// How many elements in that array?
-			vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
-			vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
-			inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
-	}
-}
-
-
-// --------------------------------------------------------
 // Creates the geometry we're going to draw
 // --------------------------------------------------------
 void Game::CreateGeometry()
 {
-	//mesh verts
-	//triangle
-	Vertex triangleVertices[] =
-	{
-		{ XMFLOAT3(0.75f, 0.5f, 0.0f), XMFLOAT4(1, 0, 0, 1) }, //top
-		{ XMFLOAT3(0.95f, 0.0f, 0.0f), XMFLOAT4(0, 1, 0, 1) }, //bottom_r
-		{ XMFLOAT3(0.55f, 0.0f, 0.0f), XMFLOAT4(0, 0, 1, 1) }  //bottom_l
-	};
-	unsigned int triangleIndices[] = { 0, 1, 2 };
+	//creating shaders
+	std::shared_ptr<SimpleVertexShader> vertexShader = std::make_shared<SimpleVertexShader>(
+		Graphics::Device, Graphics::Context, FixPath(L"VertexShader.cso").c_str());
+	std::shared_ptr<SimplePixelShader> pixelShader = std::make_shared<SimplePixelShader>(
+		Graphics::Device, Graphics::Context, FixPath(L"PixelShader.cso").c_str());
+	std::shared_ptr<SimplePixelShader> uvShader = std::make_shared<SimplePixelShader>(
+		Graphics::Device, Graphics::Context, FixPath(L"DebugUVsPS.cso").c_str());
+	std::shared_ptr<SimplePixelShader> normalShader = std::make_shared<SimplePixelShader>(
+		Graphics::Device, Graphics::Context, FixPath(L"DebugNormalsPS.cso").c_str());
+	std::shared_ptr<SimplePixelShader> customShader = std::make_shared<SimplePixelShader>(
+		Graphics::Device, Graphics::Context, FixPath(L"CustomPS.cso").c_str());
 
-	//rectangle
-	Vertex quadVertices[] = {
-		{ XMFLOAT3(0.0f, 0.5f, 0.0f), XMFLOAT4(1, 1, 0, 1)},  //top_l
-		{ XMFLOAT3(0.5f, 0.5f, 0.0f), XMFLOAT4(1, 0, 1, 1)},   //top_r
-		{ XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT4(0, 0, 1, 1)}, //bottom_l
-		{ XMFLOAT3(0.5f, 0.0f, 0.0f), XMFLOAT4(0, 1, 0, 1)}   //bottom_r
-	};
-	unsigned int rectIndices[] = { 0, 1, 2, 1, 3, 2 };
-	
-	//pentagon
-	Vertex pentagonVertices[] = {
-		{ XMFLOAT3(-0.4f, 0.25f, 0.0f), XMFLOAT4(1, 0, 0, 1)},  //center
-		{ XMFLOAT3(-0.4f, 0.5f, 0.0f), XMFLOAT4(1, 0, 0, 1)},  //top
-		{ XMFLOAT3(-0.1f, 0.25f, 0.0f), XMFLOAT4(1, 0, 1, 1)},  //top_r
-		{ XMFLOAT3(-0.25f, 0.0f, 0.0f), XMFLOAT4(0, 1, 0, 1)}, //bottom_r
-		{ XMFLOAT3(-0.55f, 0.0f, 0.0f), XMFLOAT4(0, 0, 1, 1)}, //bottom_l
-		{ XMFLOAT3(-0.7f, 0.25f, 0.0f), XMFLOAT4(1, 1, 0, 1)}  //top_l
-	};
-	unsigned int pentagonIndices[] = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 1 };
-	
-	auto rect = std::make_shared<Mesh>(quadVertices, 4, rectIndices, 6, "Quadrilateral");
-	auto triangle = std::make_shared<Mesh>(triangleVertices, 3, triangleIndices, 3, "Triangle");
-	auto pentagon = std::make_shared<Mesh>(pentagonVertices, 6, pentagonIndices, 15, "Pentagon");
+	//loading models
+	std::shared_ptr<Mesh> sphereMesh0 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh1 = std::make_shared<Mesh>("sphere1", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh2 = std::make_shared<Mesh>("sphere2", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh3 = std::make_shared<Mesh>("sphere3", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
+	std::shared_ptr<Mesh> helixMesh = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
+	std::shared_ptr<Mesh> torusMesh = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
+	std::shared_ptr<Mesh> cylinderMesh = std::make_shared<Mesh>("cylinder", FixPath(L"../../Assets/Models/cylinder.obj").c_str());
+	std::shared_ptr<Mesh> quadMesh = std::make_shared<Mesh>("quad", FixPath(L"../../Assets/Models/quad.obj").c_str());
+	std::shared_ptr<Mesh> quad_double_sidedMesh = std::make_shared<Mesh>("quad_double_sided", FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str());
 
-	// Store meshes in the vector
-	meshes.push_back(triangle);
-	meshes.push_back(rect);
-	meshes.push_back(pentagon);
+	//updating mesh vector
+	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, cubeMesh, helixMesh, torusMesh, cylinderMesh, quadMesh, quad_double_sidedMesh });
 
-	//GAME ENTITIES
-	std::shared_ptr<GameEntity> ge1 = std::make_shared<GameEntity>(triangle);
-	std::shared_ptr<GameEntity> ge2 = std::make_shared<GameEntity>(rect);
-	std::shared_ptr<GameEntity> ge3 = std::make_shared<GameEntity>(pentagon);
-	std::shared_ptr<GameEntity> ge4 = std::make_shared<GameEntity>(triangle); //same mesh as ge1 and ge5
-	std::shared_ptr<GameEntity> ge5 = std::make_shared<GameEntity>(triangle); //same mesh " " 
+	//creating materials
+	std::shared_ptr<Material> mat1 = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(.75, 0, 0.95), "Purple");
+	std::shared_ptr<Material> matUV = std::make_shared<Material>(uvShader, vertexShader, XMFLOAT3(1, 1, 1), "UV Preview");
+	std::shared_ptr<Material> matNorm = std::make_shared<Material>(normalShader, vertexShader, XMFLOAT3(1, 1, 1), "Normal Preview");
+	std::shared_ptr<Material> matCustom = std::make_shared<Material>(customShader, vertexShader, XMFLOAT3(1, 1, 1), "Custom Colorshift");
 
-	//adjust transforms
-	ge1->GetTransform()->Rotate(0, 0, 0.1f);
-	ge3->GetTransform()->MoveAbsolute(-1.2f, -0.3f, 0.0f);
-	ge4->GetTransform()->MoveAbsolute(-0.5f, 0.1f, 0.0f);
-	ge5->GetTransform()->MoveAbsolute(0.1f, -1.0f, 0.0f);
+	//updating mats vector
+	mats.insert(mats.end(), { mat1, matUV, matNorm, matCustom });
 
-	//add to entity vector to loop through for drawing purposes
-	entities.push_back(ge1);
-	entities.push_back(ge2);
-	entities.push_back(ge3);
-	entities.push_back(ge4);
-	entities.push_back(ge5);
+	//updating entities vector
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh0, matCustom));
+	entities.push_back(std::make_shared<GameEntity>(cubeMesh, mat1));
+	entities.push_back(std::make_shared<GameEntity>(helixMesh, mat1));
+	entities.push_back(std::make_shared<GameEntity>(torusMesh, matUV));
+	entities.push_back(std::make_shared<GameEntity>(cylinderMesh, matUV));
+	entities.push_back(std::make_shared<GameEntity>(quadMesh, matNorm));
+	entities.push_back(std::make_shared<GameEntity>(quad_double_sidedMesh, matNorm));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh1, mat1));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh2, matUV));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh3, matNorm));
+
+	//place entities in scene
+	entities[0]->GetTransform()->MoveAbsolute(-3, 0, 5);
+	entities[1]->GetTransform()->MoveAbsolute(0, 0, 5);
+	entities[2]->GetTransform()->MoveAbsolute(3, 0, 5);
+	entities[3]->GetTransform()->MoveAbsolute(6, 0, 5);
+	entities[4]->GetTransform()->MoveAbsolute(9, 0, 5);
+	entities[5]->GetTransform()->MoveAbsolute(12, 0, 5);
+	entities[6]->GetTransform()->MoveAbsolute(15, 0, 5);
+	entities[7]->GetTransform()->MoveAbsolute(0, -3, 5);
+	entities[8]->GetTransform()->MoveAbsolute(6, -3, 5);
+	entities[9]->GetTransform()->MoveAbsolute(12, -3, 5);
 }
 
 
@@ -263,12 +167,8 @@ void Game::Update(float deltaTime, float totalTime)
 		Window::Quit();
 
 	//update entity transforms each frame
-	float scale = (float)sin(totalTime * 5) * 0.5f + 1.0f;
-	entities[0]->GetTransform()->SetScale(scale, scale, scale);
-	entities[1]->GetTransform()->Rotate(0, 0, deltaTime * 1.0f);
-	entities[2]->GetTransform()->SetPosition((float)sin(totalTime), 0, 0);
-	entities[3]->GetTransform()->Rotate(0, 0, deltaTime * -1.0f);
-	entities[4]->GetTransform()->SetPosition((float)cos(totalTime), 0, 0);
+	//float scale = (float)sin(totalTime * 5) * 0.5f + 1.0f;
+	//entities[0]->GetTransform()->SetScale(scale, scale, scale);
 
 	if (cameras.size() > 0)
 	{
@@ -299,7 +199,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		//copy data to constant buffer
 		for (auto& entity : entities)
 		{
-			entity->Draw(constantBuffer, cameras[activeCameraIndex]);
+			entity->GetMat()->GetPixelShader()->SetFloat("time", totalTime);
+			entity->Draw(cameras[activeCameraIndex]);
 		}
 	}
 
@@ -390,6 +291,7 @@ void Game::BuildUI()
 				if (ImGui::TreeNode("Entity Node", "Entity %d", i))
 				{	
 					ImGui::Text("Mesh Shape: %s", entities[i]->GetMesh()->GetShapeName());
+					ImGui::Text("Material Name: %s", entities[i]->GetMat()->GetName());
 					ImGui::Text("Index Count: %d", entities[i]->GetMesh()->GetIndexCount());
 					if (ImGui::DragFloat3("Position", &pos.x, 0.01f)) trans->SetPosition(pos);
 					if (ImGui::DragFloat3("Rotation (Radians)", &rot.x, 0.01f)) trans->SetRotation(rot);
