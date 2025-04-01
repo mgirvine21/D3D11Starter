@@ -10,6 +10,7 @@
 #include <DirectXMath.h>
 #include "Material.h"
 #include "SimpleShader.h"
+#include "Lights.h"
 
 class Game
 {
@@ -69,5 +70,11 @@ private:
 
 	DirectX::XMFLOAT4 meshColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);  //white
 	DirectX::XMFLOAT3 meshOffset = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);       // no offset
+
+	//lights
+	DirectX::XMFLOAT3 ambientColor;
+	std::vector<Light> lights;
+	Light dirLight1;
+
 };
 

@@ -3,10 +3,12 @@
 Material::Material(std::shared_ptr<SimplePixelShader> pixelShader, 
 	std::shared_ptr<SimpleVertexShader> vertexShader, 
 	DirectX::XMFLOAT3 tint,
+	float roughness,
 	const char* name,
 	DirectX::XMFLOAT2 uvScale,
 	DirectX::XMFLOAT2 uvOffset) :
 	name(name),
+	roughness(roughness),
 	pixelShader(pixelShader),
 	vertexShader(vertexShader),
 	colorTint(tint),
@@ -22,6 +24,7 @@ DirectX::XMFLOAT3 Material::GetColorTint() { return colorTint; }
 const char* Material::GetName() { return name; }
 DirectX::XMFLOAT2 Material::GetUVScale() { return uvScale; }
 DirectX::XMFLOAT2 Material::GetUVOffset() { return uvOffset; }
+float Material::GetRoughness() { return roughness; }
 
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Material::GetTextureSRV(std::string name)
 {
@@ -61,6 +64,7 @@ void Material::SetVertexShader(std::shared_ptr<SimpleVertexShader> vertexShader)
 void Material::SetColorTint(DirectX::XMFLOAT3 tint) { this->colorTint = tint; }
 void Material::SetUVScale(DirectX::XMFLOAT2 scale) { uvScale = scale; }
 void Material::SetUVOffset(DirectX::XMFLOAT2 offset) { uvOffset = offset; }
+void Material::SetRoughness(float rough) { roughness = rough; }
 
 void Material::PrepareMaterial(std::shared_ptr<Transform> transform, std::shared_ptr<Camera> camera)
 {
@@ -70,6 +74,7 @@ void Material::PrepareMaterial(std::shared_ptr<Transform> transform, std::shared
 
 	//preparing data for the GPU
 	vertexShader->SetMatrix4x4("worldMatrix", transform->GetWorldMatrix());
+	vertexShader->SetMatrix4x4("worldInvTrans", transform->GetWorldInverseTransposeMatrix());
 	vertexShader->SetMatrix4x4("viewMatrix", camera->GetView());
 	vertexShader->SetMatrix4x4("projectionMatrix", camera->GetProjection());
 
@@ -80,6 +85,8 @@ void Material::PrepareMaterial(std::shared_ptr<Transform> transform, std::shared
 	pixelShader->SetFloat3("colorTint", colorTint);
 	pixelShader->SetFloat2("uvScale", uvScale);
 	pixelShader->SetFloat2("uvOffset", uvOffset);
+	pixelShader->SetFloat("roughness", roughness);
+	pixelShader->SetFloat3("cameraPosition", camera->GetTransform()->GetPosition());
 
 	//copy data to GPU
 	pixelShader->CopyAllBufferData();
