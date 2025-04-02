@@ -33,7 +33,8 @@ VertexToPixel main( VertexShaderInput input )
 
 	//passing through other data
     output.uv = input.uv;
-    output.normal = mul((float3x3)worldInvTrans, input.normal);
+    output.normal = normalize(mul((float3x3) worldInvTrans, input.normal));
+    output.tangent = normalize(mul((float3x3) worldMatrix, input.tangent));
     output.worldPos = mul(worldMatrix, float4(input.localPosition, 1.0f)).xyz;
 	
 	// Whatever we return will make its way through the pipeline to the

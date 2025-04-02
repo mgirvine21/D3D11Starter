@@ -15,7 +15,8 @@ cbuffer ExternalData : register(b0)
 }
 
 //texture and sampler resouces
-Texture2D SurfaceTexture : register(t0); // "t" registers for textures
+Texture2D SurfaceTexture  : register(t0); // "t" registers for textures
+Texture2D NormalMap       : register(t1); // "t" registers for textures
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
@@ -31,11 +32,26 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
 	//normalize incoming normals
     input.normal = normalize(input.normal);
+    input.tangent = normalize(input.tangent);
     
     input.uv = input.uv * uvScale + uvOffset;
- 
+    
+    float3 N = input.normal;
+    float3 T = input.tangent;
+    T = normalize(T - N * dot(T, N)); // Gram-Schmidt assumes T&N are normalized!
+    float3 B = cross(T, N);
+    float3x3 TBN = float3x3(T, B, N);
+    
+    
+    
+    
+    float3 unpackedNormal = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb * 2 - 1);
+    
+    // Assumes that input.normal is the normal later in the shader
+    input.normal = mul(unpackedNormal, TBN); // Note multiplication order!
+    
     float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
-    surfaceColor += colorTint;
+    surfaceColor *= colorTint;
     
     float3 totalLight = ambientColor * surfaceColor;
 

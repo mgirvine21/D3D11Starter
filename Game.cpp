@@ -90,12 +90,18 @@ void Game::CreateGeometry()
 
 	//actually load a texture
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockNormalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionNormalSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleNormalSRV;
 
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock.png").c_str(), 0, rockSRV.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood.png").c_str(), 0, woodSRV.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobble.png").c_str(), 0, cobbleSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_normals.png").c_str(), 0, rockNormalSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cushion.png").c_str(), 0, cushionSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cushion_normals.png").c_str(), 0, cushionNormalSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobblestone.png").c_str(), 0, cobbleSRV.GetAddressOf());
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobblestone_normals.png").c_str(), 0, cobbleNormalSRV.GetAddressOf());
 
 	//creating shaders
 	std::shared_ptr<SimpleVertexShader> vertexShader = std::make_shared<SimpleVertexShader>(
@@ -115,64 +121,95 @@ void Game::CreateGeometry()
 
 	//loading models
 	std::shared_ptr<Mesh> sphereMesh0 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh1 = std::make_shared<Mesh>("sphere1", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh2 = std::make_shared<Mesh>("sphere2", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh3 = std::make_shared<Mesh>("sphere3", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh4 = std::make_shared<Mesh>("sphere4", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
-	std::shared_ptr<Mesh> helixMesh = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
-	std::shared_ptr<Mesh> torusMesh = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
-	std::shared_ptr<Mesh> cylinderMesh = std::make_shared<Mesh>("cylinder", FixPath(L"../../Assets/Models/cylinder.obj").c_str());
-	std::shared_ptr<Mesh> quadMesh = std::make_shared<Mesh>("quad", FixPath(L"../../Assets/Models/quad.obj").c_str());
-	std::shared_ptr<Mesh> quad_double_sidedMesh = std::make_shared<Mesh>("quad_double_sided", FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str());
+	std::shared_ptr<Mesh> cubeMesh0 = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
+	std::shared_ptr<Mesh> helixMesh0 = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
+	std::shared_ptr<Mesh> torusMesh0 = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
+	std::shared_ptr<Mesh> cylinderMesh0 = std::make_shared<Mesh>("cylinder", FixPath(L"../../Assets/Models/cylinder.obj").c_str());
+	std::shared_ptr<Mesh> quadMesh0 = std::make_shared<Mesh>("quad", FixPath(L"../../Assets/Models/quad.obj").c_str());
+	std::shared_ptr<Mesh> quad_double_sidedMesh0 = std::make_shared<Mesh>("quad_double_sided", FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str());
+
+	std::shared_ptr<Mesh> sphereMesh1 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> cubeMesh1 = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
+	std::shared_ptr<Mesh> helixMesh1 = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
+	std::shared_ptr<Mesh> torusMesh1 = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
+	std::shared_ptr<Mesh> cylinderMesh1 = std::make_shared<Mesh>("cylinder", FixPath(L"../../Assets/Models/cylinder.obj").c_str());
+	std::shared_ptr<Mesh> quadMesh1 = std::make_shared<Mesh>("quad", FixPath(L"../../Assets/Models/quad.obj").c_str());
+	std::shared_ptr<Mesh> quad_double_sidedMesh1 = std::make_shared<Mesh>("quad_double_sided", FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str());
+
+	std::shared_ptr<Mesh> sphereMesh2 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh3 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh4 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh5 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh6 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh7 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
 
 	//updating mesh vector
-	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, sphereMesh4, cubeMesh, helixMesh, torusMesh, cylinderMesh, quadMesh, quad_double_sidedMesh });
+	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, cubeMesh0, cubeMesh1, helixMesh0, helixMesh1, torusMesh0, torusMesh1, cylinderMesh0, cylinderMesh1, quadMesh0, quadMesh1, quad_double_sidedMesh0, quad_double_sidedMesh1, sphereMesh2, sphereMesh3, sphereMesh4, sphereMesh5, sphereMesh6, sphereMesh7 });
 
 	//creating materials
-	std::shared_ptr<Material> mat1 = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(.75f, 0, 0.95f), 0.0f, "Rocky Purple");
-	mat1->AddSampler("BasicSampler", sampler);
-	mat1->AddTextureSRV("SurfaceTexture", rockSRV);
-
 	std::shared_ptr<Material> matUV = std::make_shared<Material>(uvShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "UV Preview", XMFLOAT2(1, 1));
 	std::shared_ptr<Material> matNorm = std::make_shared<Material>(normalShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Normal Preview", XMFLOAT2(1, 1));
 	std::shared_ptr<Material> matCustom = std::make_shared<Material>(customShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Custom Colorshift", XMFLOAT2(1, 1));
 
 	//adding texture to materials
-		std::shared_ptr<Material> matRock = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Rock", XMFLOAT2(1, 1));
+	std::shared_ptr<Material> matRock = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Rock", XMFLOAT2(1, 1));
 	matRock->AddSampler("BasicSampler", sampler);
 	matRock->AddTextureSRV("SurfaceTexture", rockSRV);
 
-	std::shared_ptr<Material> matWood = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1,1,1), 0.0f, "Wood", XMFLOAT2(2, 2));
-	matWood->AddSampler("BasicSampler", sampler);
-	matWood->AddTextureSRV("SurfaceTexture", woodSRV);
+	std::shared_ptr<Material> matCushion = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1,1,1), 0.0f, "Cushion", XMFLOAT2(2, 2));
+	matCushion->AddSampler("BasicSampler", sampler);
+	matCushion->AddTextureSRV("SurfaceTexture", cushionSRV);
 	
-	//mat with two textures using the multiply pixle shader
-	std::shared_ptr<Material> matCobbleStone = std::make_shared<Material>(multiplyShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Cobble", XMFLOAT2(1, 1));
+	std::shared_ptr<Material> matCobbleStone = std::make_shared<Material>(pixelShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Cobble", XMFLOAT2(1, 1));
 	matCobbleStone->AddSampler("BasicSampler", sampler);
-	matCobbleStone->AddTextureSRV("SurfaceTextureStone", rockSRV);
-	matCobbleStone->AddTextureSRV("SurfaceTextureCobble", cobbleSRV);
+	matCobbleStone->AddTextureSRV("SurfaceTexture", cobbleSRV);
+
+	std::shared_ptr<Material> matRockNormals = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Rock With Normals", XMFLOAT2(1, 1));
+	matRockNormals->AddSampler("BasicSampler", sampler);
+	matRockNormals->AddTextureSRV("SurfaceTexture", rockSRV);
+	matRockNormals->AddTextureSRV("NormalMap", rockNormalSRV);
+
+	std::shared_ptr<Material> matCushionNormals = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Cushion With Normals", XMFLOAT2(2, 2));
+	matCushionNormals->AddSampler("BasicSampler", sampler);
+	matCushionNormals->AddTextureSRV("SurfaceTexture", cushionSRV);
+	matCushionNormals->AddTextureSRV("NormalMap", cushionNormalSRV);
+
+	std::shared_ptr<Material> matCobbleStoneNormals = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Cobble With Normals", XMFLOAT2(1, 1));
+	matCobbleStoneNormals->AddSampler("BasicSampler", sampler);
+	matCobbleStoneNormals->AddTextureSRV("SurfaceTexture", cobbleSRV);
+	matCobbleStoneNormals->AddTextureSRV("NormalMap", cobbleNormalSRV);
 	
 	//mat that uses lighting
 	std::shared_ptr<Material> matLighting = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(.75f, 0, 0.95f), 0.0f, "Lighting");
 	matLighting->AddSampler("BasicSampler", sampler);
-	matLighting->AddTextureSRV("SurfaceTexture", rockSRV);
 
 	//updating mats vector
-	mats.insert(mats.end(), { mat1, matUV, matNorm, matCustom, matRock, matWood, matCobbleStone, matLighting });
+	mats.insert(mats.end(), { matUV, matNorm, matCustom, matRock, matCushion, matCobbleStone, matRockNormals, matCushionNormals, matCobbleStoneNormals, matLighting });
 
 	//updating entities vector
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh0, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(cubeMesh, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(helixMesh, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(torusMesh, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(cylinderMesh, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(quadMesh, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(quad_double_sidedMesh, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh1, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh2, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh3, matLighting));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh4, matLighting));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh0, matRock));
+	entities.push_back(std::make_shared<GameEntity>(cubeMesh0, matRock));
+	entities.push_back(std::make_shared<GameEntity>(helixMesh0, matRock));
+	entities.push_back(std::make_shared<GameEntity>(torusMesh0, matRock));
+	entities.push_back(std::make_shared<GameEntity>(cylinderMesh0, matRock));
+	entities.push_back(std::make_shared<GameEntity>(quadMesh0, matRock));
+	entities.push_back(std::make_shared<GameEntity>(quad_double_sidedMesh0, matRock));
+
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh1, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(cubeMesh1, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(helixMesh1, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(torusMesh1, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(cylinderMesh1, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(quadMesh1, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(quad_double_sidedMesh1, matRockNormals));
+
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh2, matRock));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh3, matRockNormals));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh4, matCushion));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh5, matCushionNormals));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh6, matCobbleStone));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh7, matCobbleStoneNormals));
+
 
 	//place entities in scene
 	entities[0]->GetTransform()->MoveAbsolute(-3, 0, 5);
@@ -182,10 +219,21 @@ void Game::CreateGeometry()
 	entities[4]->GetTransform()->MoveAbsolute(9, 0, 5);
 	entities[5]->GetTransform()->MoveAbsolute(12, 0, 5);
 	entities[6]->GetTransform()->MoveAbsolute(15, 0, 5);
-	entities[7]->GetTransform()->MoveAbsolute(0, -3, 5);
-	entities[8]->GetTransform()->MoveAbsolute(6, -3, 5);
-	entities[9]->GetTransform()->MoveAbsolute(12, -3, 5);
-	entities[10]->GetTransform()->MoveAbsolute(3, -3, 5);
+
+	entities[7]->GetTransform()->MoveAbsolute(-3, -3, 5);
+	entities[8]->GetTransform()->MoveAbsolute(0, -3, 5);
+	entities[9]->GetTransform()->MoveAbsolute(3, -3, 5);
+	entities[10]->GetTransform()->MoveAbsolute(6, -3, 5);
+	entities[11]->GetTransform()->MoveAbsolute(9, -3, 5);
+	entities[12]->GetTransform()->MoveAbsolute(12, -3, 5);
+	entities[13]->GetTransform()->MoveAbsolute(15, -3, 5);
+
+	entities[14]->GetTransform()->MoveAbsolute(-3, 3, 5);
+	entities[15]->GetTransform()->MoveAbsolute(-3, 6, 5);
+	entities[16]->GetTransform()->MoveAbsolute(0, 3, 5);
+	entities[17]->GetTransform()->MoveAbsolute(0, 6, 5);
+	entities[18]->GetTransform()->MoveAbsolute(3, 3, 5);
+	entities[19]->GetTransform()->MoveAbsolute(3, 6, 5);
 
 
 	//lighting

@@ -21,7 +21,7 @@ public:
 	const char* GetShapeName() { return name; }
 
 	void Draw();
-
+	
 	//destructor
 	~Mesh() = default;
 
@@ -36,5 +36,6 @@ private:
 	const char* name;
 
 	void CreateBuffers(Vertex* vertexArray, size_t vertexCount, unsigned int* indexArray, size_t indexCount);
+	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 
 };

@@ -1,10 +1,24 @@
 #include "ShaderStructs.hlsli"
+#include "Lighting.hlsli"
+
+#define NUM_LIGHTS 5
 
 cbuffer ExternalData : register(b0)
 {
+	// Scene related
+    Light lights[NUM_LIGHTS];
+    float3 ambientColor;
+
+	// Camera related
+    float3 cameraPosition;
+
+	// Material related
     float3 colorTint;
+    float roughness;
     float2 uvScale;
     float2 uvOffset;
+    int useSpecularMap;
+	
 }
 
 //texture and sampler resouces
@@ -22,17 +36,43 @@ SamplerState BasicSampler : register(s0); // "s" registers for samplers
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-	
-	//sampling
+	// Clean up un-normalized normals
+    input.normal = normalize(input.normal);
+
+	// Adjust the uv coords
     input.uv = input.uv * uvScale + uvOffset;
+
+	// Sample the texture and tint for the final surface color
     float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
-	//colorTinting
     surfaceColor *= colorTint;
+ 
+	// Start off with ambient
+    float3 totalLight = ambientColor * surfaceColor;
 	
-	
-    return float4(surfaceColor, 1);
+	// Loop and handle all lights
+    for (int i = 0; i < NUM_LIGHTS; i++)
+    {
+		// Grab this light and normalize the direction (just in case)
+        Light light = lights[i];
+        light.Direction = normalize(light.Direction);
+
+		// Run the correct lighting calculation based on the light's type
+        switch (lights[i].Type)
+        {
+            case LIGHT_TYPE_DIRECTIONAL:
+                totalLight += DirLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
+                break;
+
+            case LIGHT_TYPE_POINT:
+                totalLight += PointLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
+                break;
+
+            case LIGHT_TYPE_SPOT:
+                totalLight += SpotLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
+                break;
+        }
+    }
+
+	// Should have the complete light contribution at this point
+    return float4(totalLight, 1);
 }
