@@ -11,6 +11,7 @@
 #include "Material.h"
 #include "SimpleShader.h"
 #include "Lights.h"
+#include "Sky.h"
 
 class Game
 {
@@ -75,6 +76,9 @@ private:
 	DirectX::XMFLOAT3 ambientColor;
 	std::vector<Light> lights;
 	Light dirLight1;
+
+	//sky box
+	std::shared_ptr<Sky> sky;
 
 };
 

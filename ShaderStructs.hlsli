@@ -38,6 +38,12 @@ struct VertexToPixel
     float3 worldPos : POSITION;
 };
 
+struct VertexToPixel_Sky
+{
+    float4 position : SV_POSITION;
+    float3 sampleDir : DIRECTION; // For cube map sampling
+};
+
 //function to make a smooth color change using sin
 float3 GetColorShift(float t)
 {

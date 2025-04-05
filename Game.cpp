@@ -118,6 +118,8 @@ void Game::CreateGeometry()
 		Graphics::Device, Graphics::Context, FixPath(L"MultiplyPS.cso").c_str());
 	std::shared_ptr<SimplePixelShader> lightingShader = std::make_shared<SimplePixelShader>(
 		Graphics::Device, Graphics::Context, FixPath(L"PixelLightingShader.cso").c_str());
+	std::shared_ptr<SimpleVertexShader> skyVS = std::make_shared<SimpleVertexShader>(Graphics::Device, Graphics::Context, FixPath(L"SkyVS.cso").c_str());
+	std::shared_ptr<SimplePixelShader> skyPS = std::make_shared<SimplePixelShader>(Graphics::Device, Graphics::Context, FixPath(L"SkyPS.cso").c_str());
 
 	//loading models
 	std::shared_ptr<Mesh> sphereMesh0 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
@@ -146,6 +148,18 @@ void Game::CreateGeometry()
 	//updating mesh vector
 	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, cubeMesh0, cubeMesh1, helixMesh0, helixMesh1, torusMesh0, torusMesh1, cylinderMesh0, cylinderMesh1, quadMesh0, quadMesh1, quad_double_sidedMesh0, quad_double_sidedMesh1, sphereMesh2, sphereMesh3, sphereMesh4, sphereMesh5, sphereMesh6, sphereMesh7 });
 
+	sky = std::make_shared<Sky>(
+		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/right.png").c_str(),
+		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/left.png").c_str(),
+		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/up.png").c_str(),
+		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/down.png").c_str(),
+		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/front.png").c_str(),
+		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/back.png").c_str(),
+		cubeMesh1,
+		skyVS,
+		skyPS,
+		sampler);
+
 	//creating materials
 	std::shared_ptr<Material> matUV = std::make_shared<Material>(uvShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "UV Preview", XMFLOAT2(1, 1));
 	std::shared_ptr<Material> matNorm = std::make_shared<Material>(normalShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Normal Preview", XMFLOAT2(1, 1));
@@ -168,16 +182,19 @@ void Game::CreateGeometry()
 	matRockNormals->AddSampler("BasicSampler", sampler);
 	matRockNormals->AddTextureSRV("SurfaceTexture", rockSRV);
 	matRockNormals->AddTextureSRV("NormalMap", rockNormalSRV);
+	matRockNormals->AddTextureSRV("EnvironmentMap", sky->GetSkyTexture());
 
 	std::shared_ptr<Material> matCushionNormals = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Cushion With Normals", XMFLOAT2(2, 2));
 	matCushionNormals->AddSampler("BasicSampler", sampler);
 	matCushionNormals->AddTextureSRV("SurfaceTexture", cushionSRV);
 	matCushionNormals->AddTextureSRV("NormalMap", cushionNormalSRV);
+	matCushionNormals->AddTextureSRV("EnvironmentMap", sky->GetSkyTexture());
 
 	std::shared_ptr<Material> matCobbleStoneNormals = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(1, 1, 1), 0.0f, "Cobble With Normals", XMFLOAT2(1, 1));
 	matCobbleStoneNormals->AddSampler("BasicSampler", sampler);
 	matCobbleStoneNormals->AddTextureSRV("SurfaceTexture", cobbleSRV);
 	matCobbleStoneNormals->AddTextureSRV("NormalMap", cobbleNormalSRV);
+	matCobbleStoneNormals->AddTextureSRV("EnvironmentMap", sky->GetSkyTexture());
 	
 	//mat that uses lighting
 	std::shared_ptr<Material> matLighting = std::make_shared<Material>(lightingShader, vertexShader, XMFLOAT3(.75f, 0, 0.95f), 0.0f, "Lighting");
@@ -237,7 +254,8 @@ void Game::CreateGeometry()
 
 
 	//lighting
-	ambientColor = XMFLOAT3(0.1f, 0.1f, 0.25f); //(0.07f, 0.15f, 0.2f);
+	//changed to match the skybox
+	ambientColor = XMFLOAT3(0.5f, 0.1f, 0.25f); //(0.07f, 0.15f, 0.2f);
 
 	//lights
 	dirLight1 = {};
@@ -361,10 +379,14 @@ void Game::Draw(float deltaTime, float totalTime)
 			entity->GetMat()->GetPixelShader()->SetData(
 				"lights", &lights[0], // The address of the data to set
 				sizeof(Light) * (int)lights.size());// The address of the data to set
+			//sending cam pos to pixle shader for specualr lighting
+			entity->GetMat()->GetPixelShader()->SetFloat3("cameraPosition", cameras[activeCameraIndex]->GetTransform()->GetPosition());
 			entity->Draw(cameras[activeCameraIndex]);
 
 		}
 	}
+
+	sky->Draw(cameras[activeCameraIndex]);
 
 	// Frame END
 	// - These should happen exactly ONCE PER FRAME

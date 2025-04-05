@@ -56,6 +56,15 @@ float3 DirLight(Light light, float3 normal, float3 worldPos, float3 camPos, floa
 	// Calculate the light amounts
     float diff = Diffuse(normal, toLight);
     float spec = SpecularPhong(normal, toLight, toCamera, roughness);
+    
+    // Cut the specular if the diffuse contribution is zero
+    // - any() returns 1 if any component of the param is non-zero
+    // - In other words:
+    // - If the diffuse amount is 0, any(diffuse) returns 0
+    // - If the diffuse amount is != 0, any(diffuse) returns 1
+    // - So when diffuse is 0, specular becomes 0
+    spec *= any(diff);
+
 
 	// Combine
     //tint specular for fun
@@ -75,6 +84,8 @@ float3 PointLight(Light light, float3 normal, float3 worldPos, float3 camPos, fl
     float atten = Attenuate(light, worldPos);
     float diff = Diffuse(normal, toLight);
     float spec = SpecularPhong(normal, toLight, toCamera, roughness);
+    
+    spec *= any(diff);
 
 	// Combine
     return (diff * surfaceColor + spec) * atten * light.Intensity * light.Color;
