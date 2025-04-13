@@ -43,7 +43,8 @@ float4 main(VertexToPixel input) : SV_TARGET
     input.uv = input.uv * uvScale + uvOffset;
 
 	// Sample the texture and tint for the final surface color
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    float3 surfaceColor = pow(SurfaceTexture.Sample(BasicSampler, input.uv).rgb, 
+    2.2f);
     surfaceColor *= colorTint;
  
 	// Start off with ambient
@@ -60,19 +61,19 @@ float4 main(VertexToPixel input) : SV_TARGET
         switch (lights[i].Type)
         {
             case LIGHT_TYPE_DIRECTIONAL:
-                totalLight += DirLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
+               // totalLight += DirLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
                 break;
 
             case LIGHT_TYPE_POINT:
-                totalLight += PointLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
+               // totalLight += PointLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
                 break;
 
             case LIGHT_TYPE_SPOT:
-                totalLight += SpotLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
+               // totalLight += SpotLight(light, input.normal, input.worldPos, cameraPosition, roughness, surfaceColor);
                 break;
         }
     }
 
 	// Should have the complete light contribution at this point
-    return float4(totalLight, 1);
+    return float4(pow(totalLight, 1.0f / 2.2f), 1);
 }

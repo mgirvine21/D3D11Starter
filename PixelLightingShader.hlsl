@@ -15,8 +15,10 @@ cbuffer ExternalData : register(b0)
 }
 
 //texture and sampler resouces
-Texture2D SurfaceTexture  : register(t0); // "t" registers for textures
+Texture2D Albedo          : register(t0); // "t" registers for textures
 Texture2D NormalMap       : register(t1); // "t" registers for textures
+Texture2D RoughnessMap    : register(t2); // "t" registers for textures
+Texture2D MetalnessMap    : register(t3); // "t" registers for textures
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
@@ -42,18 +44,25 @@ float4 main(VertexToPixel input) : SV_TARGET
     float3 B = cross(T, N);
     float3x3 TBN = float3x3(T, B, N);
     
-    
-    
-    
     float3 unpackedNormal = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb * 2 - 1);
     
     // Assumes that input.normal is the normal later in the shader
     input.normal = mul(unpackedNormal, TBN); // Note multiplication order!
     
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
-    surfaceColor *= colorTint;
+    float3 albedoColor = pow(Albedo.Sample(BasicSampler, input.uv).rgb, 2.2f);
+    albedoColor *= colorTint;
     
-    float3 totalLight = ambientColor * surfaceColor;
+    float roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
+    
+    float metalness = MetalnessMap.Sample(BasicSampler, input.uv).r;
+    
+    // Specular color determination -----------------
+    // Assume albedo texture is actually holding specular color where metalness == 1
+    // Note the use of lerp here - metal is generally 0 or 1, but might be in between
+    // because of linear texture sampling, so we lerp the specular color to match
+    float3 specularColor = lerp(F0_NON_METAL, albedoColor.rgb, metalness);
+    
+    float3 totalLight = ambientColor * albedoColor;
 
      //looping through lights instead of one light
     for (int i = 0; i < lightCount; i++)
@@ -67,17 +76,17 @@ float4 main(VertexToPixel input) : SV_TARGET
         switch (lights[i].Type)
         {
             case LIGHT_TYPE_DIRECTIONAL:
-                totalLight += DirLight(light, input.normal, input.worldPos, cameraPos, roughness, surfaceColor);
+                totalLight += DirLightPBR(light, input.normal, input.worldPos, cameraPos, roughness, metalness, albedoColor.rgb, specularColor);
                 break;
 
             case LIGHT_TYPE_POINT:
-                totalLight += PointLight(light, input.normal, input.worldPos, cameraPos, roughness, surfaceColor);
+                totalLight += PointLightPBR(light, input.normal, input.worldPos, cameraPos, roughness, metalness, albedoColor.rgb, specularColor);
                 break;
 
             case LIGHT_TYPE_SPOT:
-                totalLight += SpotLight(light, input.normal, input.worldPos, cameraPos, roughness, surfaceColor);
+                totalLight += SpotLightPBR(light, input.normal, input.worldPos, cameraPos, roughness, metalness, albedoColor.rgb, specularColor);
                 break;
         }
     }
-    return float4(totalLight, 1);
+    return float4(pow(totalLight, 1.0f / 2.2f), 1);
 }
