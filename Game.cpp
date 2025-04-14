@@ -70,6 +70,21 @@ Game::~Game()
 	ImGui::DestroyContext();
 }
 
+//helper methods for creating geometry, materials, textures, shaders...
+void LoadMaterialTextures(const std::wstring& baseName,
+	ID3D11ShaderResourceView** albedo,
+	ID3D11ShaderResourceView** normal,
+	ID3D11ShaderResourceView** roughness,
+	ID3D11ShaderResourceView** metal) {
+	auto device = Graphics::Device.Get();
+	auto context = Graphics::Context.Get();
+
+	CreateWICTextureFromFile(device, context, FixPath(L"../../Assets/Textures/" + baseName + L"_albedo.png").c_str(), 0, albedo);
+	CreateWICTextureFromFile(device, context, FixPath(L"../../Assets/Textures/" + baseName + L"_normals.png").c_str(), 0, normal);
+	CreateWICTextureFromFile(device, context, FixPath(L"../../Assets/Textures/" + baseName + L"_roughness.png").c_str(), 0, roughness);
+	CreateWICTextureFromFile(device, context, FixPath(L"../../Assets/Textures/" + baseName + L"_metal.png").c_str(), 0, metal);
+}
+
 
 // --------------------------------------------------------
 // Creates the geometry we're going to draw
@@ -97,41 +112,13 @@ void Game::CreateGeometry()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> roughA, roughN, roughR, roughM;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodA, woodN, woodR, woodM;
 
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobblestone_albedo.png").c_str(), 0, cobbleA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobblestone_normals.png").c_str(), 0, cobbleN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobblestone_roughness.png").c_str(), 0, cobbleR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/cobblestone_metal.png").c_str(), 0, cobbleM.GetAddressOf());
-
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_albedo.png").c_str(), 0, floorA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_normals.png").c_str(), 0, floorN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_roughness.png").c_str(), 0, floorR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_metal.png").c_str(), 0, floorM.GetAddressOf());
-
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/paint_albedo.png").c_str(), 0, paintA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/paint_normals.png").c_str(), 0, paintN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/paint_roughness.png").c_str(), 0, paintR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/paint_metal.png").c_str(), 0, paintM.GetAddressOf());
-
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/scratched_albedo.png").c_str(), 0, scratchedA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/scratched_normals.png").c_str(), 0, scratchedN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/scratched_roughness.png").c_str(), 0, scratchedR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/scratched_metal.png").c_str(), 0, scratchedM.GetAddressOf());
-
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_albedo.png").c_str(), 0, bronzeA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_normals.png").c_str(), 0, bronzeN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_roughness.png").c_str(), 0, bronzeR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronzed_metal.png").c_str(), 0, bronzeM.GetAddressOf());
-
-
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rough_albedo.png").c_str(), 0, roughA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rough_normals.png").c_str(), 0, roughN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rough_roughness.png").c_str(), 0, roughR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rough_metal.png").c_str(), 0, roughM.GetAddressOf());
-
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_albedo.png").c_str(), 0, woodA.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_normals.png").c_str(), 0, woodN.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_roughness.png").c_str(), 0, woodR.GetAddressOf());
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_metal.png").c_str(), 0, woodM.GetAddressOf());
+	LoadMaterialTextures(L"cobblestone", cobbleA.GetAddressOf(), cobbleN.GetAddressOf(), cobbleR.GetAddressOf(), cobbleM.GetAddressOf());
+	LoadMaterialTextures(L"floor", floorA.GetAddressOf(), floorN.GetAddressOf(), floorR.GetAddressOf(), floorM.GetAddressOf());
+	LoadMaterialTextures(L"paint", paintA.GetAddressOf(), paintN.GetAddressOf(), paintR.GetAddressOf(), paintM.GetAddressOf());
+	LoadMaterialTextures(L"scratched", scratchedA.GetAddressOf(), scratchedN.GetAddressOf(), scratchedR.GetAddressOf(), scratchedM.GetAddressOf());
+	LoadMaterialTextures(L"bronze", bronzeA.GetAddressOf(), bronzeN.GetAddressOf(), bronzeR.GetAddressOf(), bronzeM.GetAddressOf());
+	LoadMaterialTextures(L"rough", roughA.GetAddressOf(), roughN.GetAddressOf(), roughR.GetAddressOf(), roughM.GetAddressOf());
+	LoadMaterialTextures(L"wood", woodA.GetAddressOf(), woodN.GetAddressOf(), woodR.GetAddressOf(), woodM.GetAddressOf());
 
 	//creating shaders
 	std::shared_ptr<SimpleVertexShader> vertexShader = std::make_shared<SimpleVertexShader>(
@@ -162,8 +149,10 @@ void Game::CreateGeometry()
 
 	std::shared_ptr<Mesh> cubeMesh0 = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
 
+	//updating mesh vector
+	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, sphereMesh4, sphereMesh5, sphereMesh6, });
 
-//std::shared_ptr<Mesh> helixMesh0 = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
+	//std::shared_ptr<Mesh> helixMesh0 = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
 //std::shared_ptr<Mesh> torusMesh0 = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
 //std::shared_ptr<Mesh> cylinderMesh0 = std::make_shared<Mesh>("cylinder", FixPath(L"../../Assets/Models/cylinder.obj").c_str());
 //std::shared_ptr<Mesh> quadMesh0 = std::make_shared<Mesh>("quad", FixPath(L"../../Assets/Models/quad.obj").c_str());
@@ -177,9 +166,6 @@ void Game::CreateGeometry()
 //std::shared_ptr<Mesh> quad_double_sidedMesh1 = std::make_shared<Mesh>("quad_double_sided", FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str());
 
 	//cubeMesh0, cubeMesh1, helixMesh0, helixMesh1, torusMesh0, torusMesh1, cylinderMesh0, cylinderMesh1, quadMesh0, quadMesh1, quad_double_sidedMesh0, quad_double_sidedMesh1,
-
-	//updating mesh vector
-	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, sphereMesh4, sphereMesh5, sphereMesh6, });
 
 	sky = std::make_shared<Sky>(
 		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/right.png").c_str(),
@@ -280,30 +266,30 @@ void Game::CreateGeometry()
 	dirLight1 = {};
 	dirLight1.Type = LIGHT_TYPE_DIRECTIONAL;
 	dirLight1.Direction = XMFLOAT3(1, 0, 0);
-	dirLight1.Color = XMFLOAT3(1, 0, 0);
+	dirLight1.Color = XMFLOAT3(1, .5, .5);
 	dirLight1.Intensity = 1.0;
 
 	Light dirLight2 = {};
-	dirLight2.Color = XMFLOAT3(0, 0, 1);
+	dirLight2.Color = XMFLOAT3(.5, .5, 1);
 	dirLight2.Type = LIGHT_TYPE_DIRECTIONAL;
 	dirLight2.Intensity = 0.5f;
 	dirLight2.Direction = XMFLOAT3(0, 1, 0);
 
 	Light dirLight3 = {};
-	dirLight3.Color = XMFLOAT3(0, 1, 0);
+	dirLight3.Color = XMFLOAT3(.5, 1, .5);
 	dirLight3.Type = LIGHT_TYPE_DIRECTIONAL;
 	dirLight3.Intensity = 0.5f;
 	dirLight3.Direction = XMFLOAT3(0, 0, 1);
 
 	Light pointLight1 = {};
-	pointLight1.Color = XMFLOAT3(0, 1, 1);
+	pointLight1.Color = XMFLOAT3(.5, 1, 1);
 	pointLight1.Type = LIGHT_TYPE_POINT;
 	pointLight1.Intensity = 1.0f;
 	pointLight1.Position = XMFLOAT3(-1.5f, 0, 0);
 	pointLight1.Range = 10.0f;
 
 	Light spotLight1 = {};
-	spotLight1.Color = XMFLOAT3(1, 0, 1);
+	spotLight1.Color = XMFLOAT3(1, .5, 1);
 	spotLight1.Type = LIGHT_TYPE_SPOT;
 	spotLight1.Intensity = 2.0f;
 	spotLight1.Position = XMFLOAT3(6.0f, 1.5f, 0);
@@ -600,6 +586,7 @@ void Game::BuildUI()
 	}
     ImGui::End();
 }
+
 
 
 
