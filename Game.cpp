@@ -139,18 +139,14 @@ void Game::CreateGeometry()
 	std::shared_ptr<SimplePixelShader> skyPS = std::make_shared<SimplePixelShader>(Graphics::Device, Graphics::Context, FixPath(L"SkyPS.cso").c_str());
 
 	//loading models
-	std::shared_ptr<Mesh> sphereMesh0 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh1 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh2 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh3 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh4 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh5 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-	std::shared_ptr<Mesh> sphereMesh6 = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
-
-	std::shared_ptr<Mesh> cubeMesh0 = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
+	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/sphere.obj").c_str());
+	std::shared_ptr<Mesh> helixMesh = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/helix.obj").c_str());
+	std::shared_ptr<Mesh> torusMesh = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/torus.obj").c_str());
+	std::shared_ptr<Mesh> cylinderMesh = std::make_shared<Mesh>("sphere0", FixPath(L"../../Assets/Models/cylinder.obj").c_str());
+	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>("cube", FixPath(L"../../Assets/Models/cube.obj").c_str());
 
 	//updating mesh vector
-	meshes.insert(meshes.end(), { sphereMesh0, sphereMesh1, sphereMesh2, sphereMesh3, sphereMesh4, sphereMesh5, sphereMesh6, });
+	meshes.insert(meshes.end(), { sphereMesh, cubeMesh, helixMesh, torusMesh, cylinderMesh });
 
 	//std::shared_ptr<Mesh> helixMesh0 = std::make_shared<Mesh>("helix", FixPath(L"../../Assets/Models/helix.obj").c_str());
 //std::shared_ptr<Mesh> torusMesh0 = std::make_shared<Mesh>("torus", FixPath(L"../../Assets/Models/torus.obj").c_str());
@@ -174,7 +170,7 @@ void Game::CreateGeometry()
 		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/down.png").c_str(),
 		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/front.png").c_str(),
 		FixPath(L"../../Assets/Textures/Skies/Clouds Pink/back.png").c_str(),
-		cubeMesh0,
+		cubeMesh,
 		skyVS,
 		skyPS,
 		sampler);
@@ -238,13 +234,18 @@ void Game::CreateGeometry()
 	mats.insert(mats.end(), { matUV, matNorm, matCustom, cobbleMat4x, floorMat, paintMat, scratchedMat, bronzeMat, roughMat, woodMat });
 
 	//updating entities vector
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh0, cobbleMat4x));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh1, floorMat));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh2, paintMat));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh3, scratchedMat));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh4, bronzeMat));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh5, roughMat));
-	entities.push_back(std::make_shared<GameEntity>(sphereMesh6, woodMat));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh, cobbleMat4x));
+	entities.push_back(std::make_shared<GameEntity>(sphereMesh, floorMat));
+	entities.push_back(std::make_shared<GameEntity>(helixMesh, paintMat));
+	entities.push_back(std::make_shared<GameEntity>(helixMesh, scratchedMat));
+	entities.push_back(std::make_shared<GameEntity>(torusMesh, bronzeMat));
+	entities.push_back(std::make_shared<GameEntity>(torusMesh, roughMat));
+	entities.push_back(std::make_shared<GameEntity>(cylinderMesh, bronzeMat));
+
+	std::shared_ptr<GameEntity> floor = std::make_shared<GameEntity>(cubeMesh, woodMat);
+	floor->GetTransform()->SetScale(50, 1, 50);
+	floor->GetTransform()->SetPosition(0, -5, 0);
+	entities.push_back(floor);
 
 
 	//place entities in scene
@@ -352,6 +353,15 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		cameras[activeCameraIndex]->Update(deltaTime);
 	}
+
+	//entity movement
+	entities[0]->GetTransform()->SetPosition(-3, -sin(totalTime), 0);
+	entities[1]->GetTransform()->SetPosition(0, sin(totalTime), 0);
+	entities[2]->GetTransform()->SetPosition(3 - sin(totalTime), 0, 0);
+	entities[3]->GetTransform()->SetPosition(6, -sin(totalTime), 0);
+	entities[4]->GetTransform()->SetPosition(9, 0, sin(totalTime));
+	entities[5]->GetTransform()->SetPosition(12, sin(totalTime), 0);
+	entities[6]->GetTransform()->SetPosition(15 + sin(totalTime), 0, 0);
 }
 
 // --------------------------------------------------------
