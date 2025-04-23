@@ -352,7 +352,7 @@ void Mesh::Draw()
 //
 // - Be sure to call this BEFORE creating your D3D vertex/index buffers
 // --------------------------------------------------------
-void Mesh::CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices)
+void Mesh::CalculateTangents(Vertex* verts, size_t numVerts, unsigned int* indices, size_t numIndices)
 {
 	// Reset tangents
 	for (int i = 0; i < numVerts; i++)

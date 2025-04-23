@@ -24,3 +24,15 @@ struct Light
 	float				SpotOuterAngle;
 	DirectX::XMFLOAT2	Padding;	// 64 bytes
 };
+
+// shadow options struct
+struct ShadowOptions
+{
+	int ShadowMapResolution;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> ShadowDSV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ShadowSRV;
+
+	float ShadowProjectionSize;
+	DirectX::XMFLOAT4X4 ShadowViewMatrix;
+	DirectX::XMFLOAT4X4 ShadowProjectionMatrix;
+};

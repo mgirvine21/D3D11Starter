@@ -36,6 +36,6 @@ private:
 	const char* name;
 
 	void CreateBuffers(Vertex* vertexArray, size_t vertexCount, unsigned int* indexArray, size_t indexCount);
-	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
+	void CalculateTangents(Vertex* verts, size_t numVerts, unsigned int* indices, size_t numIndices);
 
 };

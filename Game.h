@@ -34,6 +34,8 @@ private:
 	void CreateGeometry();
 	void ImGuiFrame(float deltaTime);
 	void BuildUI();
+	void CreateShadowMapResources();
+	void RenderShadowMap();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -81,12 +83,9 @@ private:
 	std::shared_ptr<Sky> sky;
 
 	//shadow mapping data and resources
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowSRV;
+	ShadowOptions shadowOptions;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowRasterizer;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowSampler;
-	DirectX::XMFLOAT4X4 lightViewMatrix;
-	DirectX::XMFLOAT4X4 lightProjectionMatrix;
-
+	std::shared_ptr<SimpleVertexShader> shadowVS;
 };
 
