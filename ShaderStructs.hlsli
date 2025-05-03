@@ -55,4 +55,5 @@ float3 GetColorShift(float t)
     );
 }
 
+
 #endif

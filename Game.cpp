@@ -58,6 +58,9 @@ void Game::Initialize()
 	shadowOptions.ShadowMapResolution = 1024;
 	shadowOptions.ShadowProjectionSize = 10.0f;
 	CreateShadowMapResources();
+
+	//post processing 
+	blurRad = 0;
 }
 
 
@@ -247,7 +250,7 @@ void Game::CreateGeometry()
 
 
 
-	//lighting
+	//LIGHTING
 	//changed to match the skybox
 	ambientColor = XMFLOAT3(0, 0, 0); //black
 
@@ -289,10 +292,10 @@ void Game::CreateGeometry()
 
 
 	lights.push_back(dirLight1);
-	//lights.push_back(dirLight2);
-	//lights.push_back(dirLight3);
-	//lights.push_back(pointLight1);
-	//lights.push_back(spotLight1);
+	lights.push_back(dirLight2);
+	lights.push_back(dirLight3);
+	lights.push_back(pointLight1);
+	lights.push_back(spotLight1);
 
 	for (int i = 0; i < lights.size(); i++)
 		if (lights[i].Type != LIGHT_TYPE_POINT)
@@ -301,6 +304,24 @@ void Game::CreateGeometry()
 				XMVector3Normalize(XMLoadFloat3(&lights[i].Direction))
 			);
 
+
+	//POST PROCESSING EFFECTS
+	//loading necessary shaders
+	blurPS = std::make_shared<SimplePixelShader>(Graphics::Device, Graphics::Context, FixPath(L"BlurPS.cso").c_str());
+	fullscreenVS = std::make_shared<SimpleVertexShader>(Graphics::Device, Graphics::Context, FixPath(L"FullscreenVS.cso").c_str());
+
+
+	//create pp resources 
+	CreatePostProcessingResources();
+
+	// Sampler state for post processing
+	D3D11_SAMPLER_DESC ppSampDesc = {};
+	ppSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	ppSampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	Graphics::Device->CreateSamplerState(&ppSampDesc, ppSampler.GetAddressOf());
 }
 
 void Game::CreateShadowMapResources()
@@ -384,7 +405,46 @@ void Game::CreateShadowMapResources()
 	XMStoreFloat4x4(&shadowOptions.ShadowProjectionMatrix, lightProjection);
 }
 
+void Game::CreatePostProcessingResources()
+{
+	//resets views if window size changes
+	ppSRV.Reset();
+	ppRTV.Reset();
 
+	// Describe the texture we're creating
+	D3D11_TEXTURE2D_DESC textureDesc = {};
+	textureDesc.Width = (unsigned int)(Window::Width());
+	textureDesc.Height = (unsigned int)(Window::Height());
+	textureDesc.ArraySize = 1;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.MipLevels = 1;
+	textureDesc.MiscFlags = 0;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	// Create the resource (no need to track it after the views are created below)
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> ppTexture;
+	Graphics::Device->CreateTexture2D(&textureDesc, 0, ppTexture.GetAddressOf());
+
+	// Create the Render Target View
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = textureDesc.Format;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	Graphics::Device->CreateRenderTargetView(
+		ppTexture.Get(),
+		&rtvDesc,
+		ppRTV.ReleaseAndGetAddressOf());
+	// Create the Shader Resource View
+	// By passing it a null description for the SRV, we
+	// get a "default" SRV that has access to the entire resource
+	Graphics::Device->CreateShaderResourceView(
+		ppTexture.Get(),
+		0,
+		ppSRV.ReleaseAndGetAddressOf());
+}
 
 
 // --------------------------------------------------------
@@ -399,6 +459,8 @@ void Game::OnResize()
 	{
 		camera->UpdateProjectionMatrix(aspectRatio);
 	}
+
+	if (Graphics::Device) CreatePostProcessingResources();
 }
 
 
@@ -460,10 +522,19 @@ void Game::Draw(float deltaTime, float totalTime)
 		Graphics::Context->ClearDepthStencilView(Graphics::DepthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
+	//post processing pre draw phase
+	const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	Graphics::Context->ClearRenderTargetView(ppRTV.Get(), clearColor);
+
+	
+
 	//render the shadow map before anything else
 	RenderShadowMap();
 
-	//entity render loop
+	//swapping active render target
+	Graphics::Context->OMSetRenderTargets(1, ppRTV.GetAddressOf(), Graphics::DepthBufferDSV.Get());
+
+	//entity render loop  draw phase
 	// DRAW geometry
 	// - These steps are generally repeated for EACH object you draw
 	// - Other Direct3D calls will also be necessary to do more complex things
@@ -494,6 +565,25 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 
 	sky->Draw(cameras[activeCameraIndex]);
+
+	//post processing post draw phase
+	//restoring back buffer
+	Graphics::Context->OMSetRenderTargets(1, Graphics::BackBufferRTV.GetAddressOf(), 0);
+
+	//setting post process VS and PS, data SRV and samplers
+	// Activate shaders and bind resources
+	// Also set any required cbuffer data (not shown)
+	fullscreenVS->SetShader();
+	blurPS->SetShader();
+	blurPS->SetShaderResourceView("Pixels", ppSRV.Get());
+	blurPS->SetSamplerState("ClampSampler", ppSampler.Get());
+
+	blurPS->SetFloat("pixelWidth", 1.0f / Window::Width());
+	blurPS->SetFloat("pixelHeight", 1.0f / Window::Height());
+	blurPS->SetInt("blurRadius", blurRad);
+	blurPS->CopyAllBufferData();
+
+	Graphics::Context->Draw(3, 0); // Draw exactly 3 vertices (one triangle)
 
 	//unbinds srvs at end of frame
 	ID3D11ShaderResourceView* nullSRVs[128] = {};
@@ -714,6 +804,11 @@ void Game::BuildUI()
 		if (ImGui::CollapsingHeader("Shadow Map Info"))
 		{
 			ImGui::Image((ImTextureID)shadowOptions.ShadowSRV.Get(), ImVec2(512, 512));
+		}
+
+		if (ImGui::CollapsingHeader("Blur Post Processing Info"))
+		{
+			ImGui::SliderInt("Blur Radius", &blurRad, 0, 25);
 		}
 	}
 	ImGui::End();	
