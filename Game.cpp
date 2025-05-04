@@ -60,7 +60,18 @@ void Game::Initialize()
 	CreateShadowMapResources();
 
 	//post processing 
+	//box blur
 	blurRad = 0;
+
+	//fog
+	fogType = 1;
+	fogColor = XMFLOAT3(0.75f, 0.65f, 0.7f);
+	fogStartDist  = 25.0f;
+	fogEndDist  = 50.0f;
+	fogDensity = 0.05f;
+	heightBasedFog = 0;
+	fogHeight = 5.0f;
+	fogVerticalDensity = 0.05f;
 }
 
 
@@ -554,11 +565,23 @@ void Game::Draw(float deltaTime, float totalTime)
 		ps->SetData(
 			"lights", &lights[0], // The address of the data to set
 			sizeof(Light) * (int)lights.size());// The address of the data to set
+
 		//sending cam pos to pixle shader for specualr lighting
 		ps->SetFloat3("cameraPos", cameras[activeCameraIndex]->GetTransform()->GetPosition());
 
 		ps->SetShaderResourceView("ShadowMap", shadowOptions.ShadowSRV);
 		ps->SetSamplerState("ShadowSampler", shadowSampler);
+
+		//setting fog values
+		ps->SetFloat("farClipDist", cameras[activeCameraIndex]->GetFarCP());
+		ps->SetInt("fogType", fogType);
+		ps->SetFloat3("fogColor", fogColor);
+		ps->SetFloat("fogStartDist", fogStartDist);
+		ps->SetFloat("fogEndDist", fogEndDist);
+		ps->SetFloat("fogDensity", fogDensity);
+		ps->SetInt("heightBasedFog", heightBasedFog);
+		ps->SetFloat("fogHeight", fogHeight);
+		ps->SetFloat("fogVerticalDensity", fogVerticalDensity);
 
 		entity->Draw(cameras[activeCameraIndex]);
 
@@ -801,14 +824,39 @@ void Game::BuildUI()
 			}
 		}
 
+		//SHADOW MAP
 		if (ImGui::CollapsingHeader("Shadow Map Info"))
 		{
 			ImGui::Image((ImTextureID)shadowOptions.ShadowSRV.Get(), ImVec2(512, 512));
 		}
 
+		//BOX BLUR
 		if (ImGui::CollapsingHeader("Blur Post Processing Info"))
 		{
 			ImGui::SliderInt("Blur Radius", &blurRad, 0, 25);
+		}
+
+		//FOG
+		if (ImGui::CollapsingHeader("Fog Post Processing Info"))
+		{
+			ImGui::ColorEdit4("Fog Color", &fogColor.x);
+			ImGui::SliderInt("Fog Type [Linear - Smooth - Exponential]", &fogType, 0, 2);
+			if (fogType == 1)
+			{
+				ImGui::SliderFloat("Fog Start Distance", &fogStartDist, 0, 50);
+				ImGui::SliderFloat("Fog End Distance", &fogEndDist, 0, 50);
+			}
+			else if (fogType == 2)
+			{
+				ImGui::SliderFloat("Fog Density", &fogDensity, 0, 1);
+			}
+			ImGui::SliderInt("Height Based Fog [Off - On]", &heightBasedFog, 0, 1);			
+			if (heightBasedFog)
+			{
+				ImGui::SliderFloat("Fog Height", &fogHeight, 0, 15);
+				ImGui::SliderFloat("Fog Vertical Density", &fogVerticalDensity, 0, 1);
+			}
+
 		}
 	}
 	ImGui::End();	

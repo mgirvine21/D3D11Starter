@@ -19,6 +19,7 @@ public:
     XMFLOAT4X4 GetView() const { return viewMatrix; }
     XMFLOAT4X4 GetProjection() const { return projMatrix; }
     float Getfov() { return fieldOfView; }
+    float GetFarCP() { return farCP; }
 
     std::shared_ptr<Transform> GetTransform() { return transform; }
 

@@ -12,6 +12,19 @@ cbuffer ExternalData : register(b0)
     float3 ambientColor;
     int lightCount;
     Light lights[MAX_LIGHTS];
+    
+    
+    //fog options and information
+    float farClipDist;
+    float3 fogColor;
+    int fogType;
+    float fogStartDist;
+    float fogEndDist;
+    float fogDensity;
+    int heightBasedFog;
+    float fogHeight;
+    float fogVerticalDensity;
+    
 }
 
 //texture and sampler resouces
@@ -109,5 +122,43 @@ float4 main(VertexToPixel input) : SV_TARGET
                 break;
         }
     }
+    
+    //FOG
+    float fog = 0.0f;
+    //calculating disnace to surface
+    float DistToSurface = distance(cameraPos, input.worldPos);
+
+    switch (fogType)
+    {
+		 //Linear
+        case 0:
+            //divided by far clip plane for 0-1 value
+            fog = DistToSurface / farClipDist;
+            break;
+		//Parameterized with start and end fog distances
+        case 1:
+            //interpolates between min and max values
+            fog = smoothstep(fogStartDist, fogEndDist, DistToSurface);
+            break;
+		
+		//Exponential
+        case 2:
+            //density 0-1 value
+            fog = 1.0f - exp(-DistToSurface * fogDensity);
+            break;
+    }
+	
+	//Exponential height based 
+    if (heightBasedFog)
+    {
+        //vert density 0-1 value
+        float heightFog = 1.0f - exp(-(fogHeight - input.worldPos.y) * fogVerticalDensity);
+        fog = max(fog, heightFog);
+    }
+	
+	//interpolate between pixel and fog color
+    totalLight = lerp(totalLight, fogColor, saturate(fog));
+    
+    //returned with gamma correction
     return float4(pow(totalLight, 1.0f / 2.2f), 1);
 }

@@ -102,6 +102,17 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ppSRV; // For sampling
 
 	//variables for pp imgui
+	//box blur
 	int blurRad;
+
+	//fog
+	int fogType;
+	DirectX::XMFLOAT3 fogColor;
+	float fogStartDist;
+	float fogEndDist;
+	float fogDensity;
+	int heightBasedFog;
+	float fogHeight;
+	float fogVerticalDensity;
 };
 
